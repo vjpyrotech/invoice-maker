@@ -221,7 +221,7 @@
 </head>
 <body>
 
-<button class="no-print" onclick="window.print()">Print Invoice</button>
+<button class="no-print" onclick="printAndSave()">Print Invoice</button>
 
 <div class="invoice-container">
     <div class="title">INVOICE</div>
@@ -290,7 +290,7 @@
             <tr>
                 <td colspan="3" rowspan="4" class="b-all no-b-top">
                     <div class="font-arial bold size-12" style="margin-bottom: 4px;">Consignee (Ship to)</div>
-                    <div contenteditable="true">
+                    <div contenteditable="true" id="consignee-details">
                         <div>Olive Events</div>
                         <div class="spell-e">Payyannur</div>
                         <div>KERALA</div>
@@ -307,7 +307,7 @@
             <tr class="h-lg">
                 <td colspan="3" class="b-left b-bottom b-right no-b-top">
                     <div class="font-arial bold size-12" style="margin-bottom: 4px;">Buyer (Bill to)</div>
-                    <div contenteditable="true">
+                    <div contenteditable="true" id="buyer-details">
                         <div>Olive Events</div>
                         <div class="spell-e">Payyannur</div>
                         <div>KERALA</div>
@@ -434,6 +434,8 @@
 window.onload = function() {
     setDefaults();
     calculate();
+    attachAutocomplete('consignee-details');
+    attachAutocomplete('buyer-details');
 };
 
 function setDefaults() {
@@ -615,6 +617,110 @@ function convertNumberToWords(amount) {
     }
     return words_string;
 }
+</script>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-app.js";
+  import { getFirestore, doc, setDoc, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCpq3fB-_U8_urt4henJwpRFzLuNZlOUns",
+    authDomain: "vj-invoice-generator.firebaseapp.com",
+    projectId: "vj-invoice-generator",
+    storageBucket: "vj-invoice-generator.firebasestorage.app",
+    messagingSenderId: "764771961839",
+    appId: "1:764771961839:web:f04a5841d0d1a82fc3841a"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  window.printAndSave = async function() {
+    const saveBtn = document.querySelector('.no-print');
+    const originalText = saveBtn.innerText;
+    
+    try {
+        saveBtn.innerText = "Saving to Cloud...";
+        saveBtn.disabled = true;
+        
+        await Promise.all([
+            saveDetails('consignee-details'),
+            saveDetails('buyer-details')
+        ]);
+        
+        saveBtn.innerText = "Opening Print...";
+        setTimeout(() => {
+             window.print();
+             saveBtn.innerText = originalText;
+             saveBtn.disabled = false;
+        }, 500);
+        
+    } catch (error) {
+        console.error("Error saving details:", error);
+        alert("Warning: Could not sync with cloud. Check internet connection.");
+        window.print();
+        saveBtn.innerText = originalText;
+        saveBtn.disabled = false;
+    }
+  };
+
+  async function saveDetails(elementId) {
+    const element = document.getElementById(elementId);
+    if (!element) return;
+    
+    const content = element.innerHTML;
+    const text = element.innerText;
+    const mobMatch = text.match(/(?:MOB\s*[:.-]?\s*)?(\d{10})/i);
+    
+    if (mobMatch && mobMatch[1]) {
+        const mobile = mobMatch[1];
+        const docRef = doc(db, "invoice_details", `${elementId}_${mobile}`);
+        await setDoc(docRef, {
+            html: content,
+            mobile: mobile,
+            type: elementId,
+            updatedAt: serverTimestamp()
+        });
+    }
+  }
+
+  function attachAutocomplete(elementId) {
+    const element = document.getElementById(elementId);
+    if (!element) return;
+    
+    element.addEventListener('input', async function() {
+        const text = element.innerText.trim();
+        if (/^\d{10}$/.test(text)) {
+            const docRef = doc(db, "invoice_details", `${elementId}_${text}`);
+            try {
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    element.innerHTML = data.html;
+                    
+                    const range = document.createRange();
+                    const sel = window.getSelection();
+                    range.selectNodeContents(element);
+                    range.collapse(false);
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                }
+            } catch (e) {
+                console.error("Autocomplete fetch error:", e);
+            }
+        }
+    });
+  }
+
+  // Initialize once DOM and Firebase are ready
+  window.addEventListener('DOMContentLoaded', () => {
+    // These functions from the original script are still global
+    if (typeof setDefaults === 'function') setDefaults();
+    if (typeof calculate === 'function') calculate();
+    
+    attachAutocomplete('consignee-details');
+    attachAutocomplete('buyer-details');
+  });
 </script>
 
 </body></html>
