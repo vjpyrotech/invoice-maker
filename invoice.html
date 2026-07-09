@@ -512,6 +512,7 @@
 
 <button class="no-print" onclick="printAndSave()">Print Invoice</button>
 <button class="no-print" onclick="location.href='index.html'" style="background-color: #2196F3;">Regular Invoice</button>
+<button class="no-print" onclick="location.href='mobile_gst.html'" style="background-color: #e91e63;">Mobile Editor</button>
 
 <div class="invoice-container">
     <!-- Header -->
@@ -650,7 +651,14 @@
 
                 <!-- Spacer row to fill remaining space -->
                 <tr class="spacer-row">
-                    <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+                    <td class="sn"></td>
+                    <td class="desc"></td>
+                    <td class="item-hsn"></td>
+                    <td class="item-carton"></td>
+                    <td class="item-qty"></td>
+                    <td class="item-unit"></td>
+                    <td class="item-price"></td>
+                    <td class="item-amount"></td>
                 </tr>
             </tbody>
         </table>
@@ -751,9 +759,257 @@ const PHONE_REGEX = /^\d{10}$/;
 
 // ---- Defaults on load ----
 window.addEventListener('DOMContentLoaded', () => {
+    const hasMobileData = localStorage.getItem('mobile_gst_invoice_data');
+    if (hasMobileData) {
+        loadFromLocalStorage();
+    } else {
+        loadPageState();
+    }
     setDefaults();
+    if (typeof updatePlaceOfSupply === 'function') updatePlaceOfSupply();
     calculate();
 });
+
+function savePageState() {
+    const state = {
+        companyName: document.getElementById('company-name') ? document.getElementById('company-name').innerText : '',
+        companyAddress: document.getElementById('company-address') ? document.getElementById('company-address').innerHTML : '',
+        companyPhone: document.getElementById('company-phone') ? document.getElementById('company-phone').innerText : '',
+        companyEmail: document.getElementById('company-email') ? document.getElementById('company-email').innerText : '',
+        sellerGstin: document.getElementById('seller-gstin') ? document.getElementById('seller-gstin').innerText : '',
+        partyName: document.getElementById('party-name') ? document.getElementById('party-name').innerText : '',
+        partyAddress: document.getElementById('party-address') ? document.getElementById('party-address').innerHTML : '',
+        partyMobile: document.getElementById('party-mobile') ? document.getElementById('party-mobile').innerText : '',
+        partyGstin: document.getElementById('party-gstin') ? document.getElementById('party-gstin').innerText : '',
+        invoiceNo: document.getElementById('invoice-no') ? document.getElementById('invoice-no').innerText : '',
+        invoiceDate: document.getElementById('invoice-date') ? document.getElementById('invoice-date').innerText : '',
+        placeOfSupply: document.getElementById('place-of-supply') ? document.getElementById('place-of-supply').innerText : '',
+        transport: document.getElementById('transport') ? document.getElementById('transport').innerText : '',
+        copyType: document.getElementById('copy-type') ? document.getElementById('copy-type').innerText : '',
+        bankName: document.getElementById('bank-name') ? document.getElementById('bank-name').innerText : '',
+        bankAccountName: document.getElementById('bank-account-name') ? document.getElementById('bank-account-name').innerText : '',
+        bankAccountNo: document.getElementById('bank-account-no') ? document.getElementById('bank-account-no').innerText : '',
+        bankAccountType: document.getElementById('bank-account-type') ? document.getElementById('bank-account-type').innerText : '',
+        bankIfsc: document.getElementById('bank-ifsc') ? document.getElementById('bank-ifsc').innerText : '',
+        termsContent: document.getElementById('terms-content') ? document.getElementById('terms-content').innerHTML : '',
+        taxRate: document.getElementById('total-tax-rate') ? document.getElementById('total-tax-rate').value : '18',
+        items: []
+    };
+    document.querySelectorAll('.item-row').forEach(row => {
+        const item = {
+            desc: row.querySelector('.desc') ? row.querySelector('.desc').innerHTML : '',
+            hsn: row.querySelector('.item-hsn') ? row.querySelector('.item-hsn').innerText : '',
+            carton: row.querySelector('.item-carton') ? row.querySelector('.item-carton').innerText : '',
+            qty: row.querySelector('.item-qty') ? row.querySelector('.item-qty').innerText : '',
+            unit: row.querySelector('.item-unit') ? row.querySelector('.item-unit').innerText : '',
+            price: row.querySelector('.item-price') ? row.querySelector('.item-price').innerText : '',
+            amount: row.querySelector('.item-amount') ? row.querySelector('.item-amount').innerText : ''
+        };
+        state.items.push(item);
+    });
+    localStorage.setItem('last_print_gst', JSON.stringify(state));
+}
+
+function loadPageState() {
+    const dataStr = localStorage.getItem('last_print_gst');
+    if (!dataStr) return;
+    try {
+        const state = JSON.parse(dataStr);
+        if (state.companyName) document.getElementById('company-name').innerText = state.companyName;
+        if (state.companyAddress) document.getElementById('company-address').innerHTML = state.companyAddress;
+        if (state.companyPhone) document.getElementById('company-phone').innerText = state.companyPhone;
+        if (state.companyEmail) document.getElementById('company-email').innerText = state.companyEmail;
+        if (state.sellerGstin) document.getElementById('seller-gstin').innerText = state.sellerGstin;
+        if (typeof updateContactLine === 'function') updateContactLine();
+        if (state.partyName) document.getElementById('party-name').innerText = state.partyName;
+        if (state.partyAddress) document.getElementById('party-address').innerHTML = state.partyAddress;
+        if (state.partyMobile) document.getElementById('party-mobile').innerText = state.partyMobile;
+        if (state.partyGstin) document.getElementById('party-gstin').innerText = state.partyGstin;
+        if (typeof updatePartyContactDisplay === 'function') updatePartyContactDisplay();
+        if (state.invoiceNo) document.getElementById('invoice-no').innerText = state.invoiceNo;
+        if (state.invoiceDate) document.getElementById('invoice-date').innerText = state.invoiceDate;
+        if (state.placeOfSupply) document.getElementById('place-of-supply').innerText = state.placeOfSupply;
+        if (state.transport) document.getElementById('transport').innerText = state.transport;
+        if (state.copyType) document.getElementById('copy-type').innerText = state.copyType;
+        if (state.bankName) document.getElementById('bank-name').innerText = state.bankName;
+        if (state.bankAccountName) document.getElementById('bank-account-name').innerText = state.bankAccountName;
+        if (state.bankAccountNo) document.getElementById('bank-account-no').innerText = state.bankAccountNo;
+        if (state.bankAccountType) document.getElementById('bank-account-type').innerText = state.bankAccountType;
+        if (state.bankIfsc) document.getElementById('bank-ifsc').innerText = state.bankIfsc;
+        if (state.termsContent) document.getElementById('terms-content').innerHTML = state.termsContent;
+        if (state.taxRate !== undefined) {
+            document.getElementById('total-tax-rate').value = state.taxRate;
+        }
+
+        if (state.items && state.items.length > 0) {
+            const tbody = document.getElementById('items-body');
+            const addContainer = document.getElementById('add-row-container');
+            const existingRows = document.querySelectorAll('.item-row');
+            const templateRow = existingRows[0].cloneNode(true);
+            existingRows.forEach(r => r.remove());
+
+            state.items.forEach((item, idx) => {
+                const newRow = templateRow.cloneNode(true);
+                const slNo = newRow.querySelector('.sl-no');
+                if (slNo) slNo.innerText = idx + 1;
+                const descTd = newRow.querySelector('.desc');
+                if (descTd) descTd.innerHTML = item.desc || '';
+                const hsnTd = newRow.querySelector('.item-hsn');
+                if (hsnTd) hsnTd.innerText = item.hsn || '';
+                const cartonTd = newRow.querySelector('.item-carton');
+                if (cartonTd) cartonTd.innerText = item.carton || '0';
+                const qtyTd = newRow.querySelector('.item-qty');
+                if (qtyTd) qtyTd.innerText = item.qty || '0';
+                const unitTd = newRow.querySelector('.item-unit');
+                if (unitTd) unitTd.innerText = item.unit || 'Nos';
+                const priceTd = newRow.querySelector('.item-price');
+                if (priceTd) priceTd.innerText = item.price || '0.00';
+                tbody.insertBefore(newRow, addContainer);
+            });
+            updateSL();
+        }
+        if (typeof syncDeliveryFrom === 'function') syncDeliveryFrom();
+    } catch(e) {
+        console.error('Failed to load page state:', e);
+    }
+}
+
+function loadFromLocalStorage() {
+    const dataStr = localStorage.getItem('mobile_gst_invoice_data');
+    if (!dataStr) return;
+    try {
+        const data = JSON.parse(dataStr);
+        
+        // Populating Seller Details
+        if (data.companyName) document.getElementById('company-name').innerText = data.companyName;
+        if (data.companyAddress) document.getElementById('company-address').innerHTML = data.companyAddress;
+        if (data.companyPhone) document.getElementById('company-phone').innerText = data.companyPhone;
+        if (data.companyEmail) document.getElementById('company-email').innerText = data.companyEmail;
+        if (data.sellerGstin) document.getElementById('seller-gstin').innerText = data.sellerGstin;
+        if (typeof updateContactLine === 'function') updateContactLine();
+
+        // Populating Party Details
+        if (data.partyName) document.getElementById('party-name').innerText = data.partyName;
+        if (data.partyAddress) document.getElementById('party-address').innerHTML = data.partyAddress;
+        if (data.partyMobile) document.getElementById('party-mobile').innerText = data.partyMobile;
+        if (data.partyGstin) document.getElementById('party-gstin').innerText = data.partyGstin;
+        if (typeof updatePartyContactDisplay === 'function') updatePartyContactDisplay();
+
+        // Populating Invoice Details
+        if (data.invoiceNo) document.getElementById('invoice-no').innerText = data.invoiceNo;
+        if (data.invoiceDate) document.getElementById('invoice-date').innerText = data.invoiceDate;
+        if (data.placeOfSupply) document.getElementById('place-of-supply').innerText = data.placeOfSupply;
+        if (data.transport) document.getElementById('transport').innerText = data.transport;
+        if (data.copyType) document.getElementById('copy-type').innerText = data.copyType;
+
+        // Populating Bank Details
+        if (data.bankName) document.getElementById('bank-name').innerText = data.bankName;
+        if (data.bankAccountName) document.getElementById('bank-account-name').innerText = data.bankAccountName;
+        if (data.bankAccountNo) document.getElementById('bank-account-no').innerText = data.bankAccountNo;
+        if (data.bankAccountType) document.getElementById('bank-account-type').innerText = data.bankAccountType;
+        if (data.bankIfsc) document.getElementById('bank-ifsc').innerText = data.bankIfsc;
+
+        // Populating Terms & Conditions
+        if (data.termsContent) document.getElementById('terms-content').innerHTML = data.termsContent;
+
+        // Populating Tax Rate
+        if (data.taxRate !== undefined) {
+            let totalTaxRateEl = document.getElementById('total-tax-rate');
+            if (!totalTaxRateEl) {
+                totalTaxRateEl = document.createElement('input');
+                totalTaxRateEl.type = 'hidden';
+                totalTaxRateEl.id = 'total-tax-rate';
+                document.body.appendChild(totalTaxRateEl);
+            }
+            totalTaxRateEl.value = data.taxRate;
+        }
+
+        // Populating Items
+        if (data.items && data.items.length > 0) {
+            const tbody = document.getElementById('items-body');
+            const addContainer = document.getElementById('add-row-container');
+            
+            // Identify custom columns from the saved column config
+            const standardIds = ['desc','hsn','carton','qty','unit','price','tax'];
+            const savedCols = (data.columns && Array.isArray(data.columns)) ? data.columns : [];
+            const customCols = savedCols.filter(c => c.visible && !standardIds.includes(c.id));
+
+            // Set column styles and visibility
+            let hideStyle = document.getElementById('hide-columns-style-gst');
+            if (!hideStyle) {
+                hideStyle = document.createElement('style');
+                hideStyle.id = 'hide-columns-style-gst';
+                document.head.appendChild(hideStyle);
+            }
+            
+            let css = '';
+            savedCols.forEach(col => {
+                if (col.visible === false) {
+                    if (col.id === 'hsn') {
+                        css += `.hsn-col, .item-hsn { display: none !important; }\n`;
+                    } else if (col.id === 'carton') {
+                        css += `.carton-col, .item-carton { display: none !important; }\n`;
+                    } else if (col.id === 'qty') {
+                        css += `.qty-col, .item-qty { display: none !important; }\n`;
+                    } else if (col.id === 'unit') {
+                        css += `.unit-col, .item-unit { display: none !important; }\n`;
+                    } else if (col.id === 'price') {
+                        css += `.price-col, .item-price { display: none !important; }\n`;
+                    }
+                }
+            });
+            hideStyle.innerHTML = css;
+
+            // Remove existing item rows
+            const existingRows = document.querySelectorAll('.item-row');
+            const templateRow = existingRows[0].cloneNode(true);
+            existingRows.forEach(r => r.remove());
+
+            data.items.forEach((item, idx) => {
+                const newRow = templateRow.cloneNode(true);
+                
+                const slNoSpan = newRow.querySelector('.sl-no');
+                if (slNoSpan) slNoSpan.innerText = idx + 1;
+
+                // Description cell: main desc + custom column values (NO carton note here)
+                const descTd = newRow.querySelector('.desc');
+                if (descTd) {
+                    let descHtml = `<div style="font-weight:bold; font-size:11px;">${item.desc || ''}</div>`;
+                    customCols.forEach(col => {
+                        const val = item[col.id];
+                        if (val !== undefined && val !== '') {
+                            descHtml += `<div style="font-size:9px; color:#555; margin-top:2px;">${col.label}: ${val}</div>`;
+                        }
+                    });
+                    descTd.innerHTML = descHtml;
+                }
+
+                const hsnTd = newRow.querySelector('.item-hsn');
+                if (hsnTd) hsnTd.innerText = item.hsn || '';
+
+                const cartonTd = newRow.querySelector('.item-carton');
+                if (cartonTd) cartonTd.innerText = item.carton || '0';
+
+                const qtyTd = newRow.querySelector('.item-qty');
+                if (qtyTd) qtyTd.innerText = item.qty || '0';
+
+                const unitTd = newRow.querySelector('.item-unit');
+                if (unitTd) unitTd.innerText = item.unit || 'Nos';
+
+                const priceTd = newRow.querySelector('.item-price');
+                if (priceTd) priceTd.innerText = item.price || '0.00';
+
+                tbody.insertBefore(newRow, addContainer);
+            });
+            updateSL();
+        }
+
+        if (typeof syncDeliveryFrom === 'function') syncDeliveryFrom();
+
+    } catch (e) {
+        console.error("Failed to load invoice from localStorage:", e);
+    }
+}
 
 function setDefaults() {
     const dateEl = document.getElementById('invoice-date');
@@ -1026,10 +1282,10 @@ function detectTaxType() {
     return 'inter'; // IGST
 }
 
-// ---- Update Place of Supply from party GSTIN ----
+// ---- Update Place of Supply from seller GSTIN ----
 function updatePlaceOfSupply() {
-    const partyGstin = (document.getElementById('party-gstin').innerText || '').trim().toUpperCase();
-    const stateCode = getStateCode(partyGstin);
+    const sellerGstin = (document.getElementById('seller-gstin').innerText || '').trim().toUpperCase();
+    const stateCode = getStateCode(sellerGstin);
     if (!stateCode) return;
 
     const stateName = getStateName(stateCode);
@@ -1091,7 +1347,24 @@ function calculate() {
     });
 
     // Get total tax rate from hidden store
-    const taxRate = parseFloat(document.getElementById('total-tax-rate').value) || 0;
+    let taxRate = parseFloat(document.getElementById('total-tax-rate').value) || 0;
+
+    // Check if tax column is visible or disabled from columns config in localStorage
+    let taxColVisible = true;
+    const dataStr = localStorage.getItem('mobile_gst_invoice_data');
+    if (dataStr) {
+        try {
+            const data = JSON.parse(dataStr);
+            if (data.columns && Array.isArray(data.columns)) {
+                const taxCol = data.columns.find(c => c.id === 'tax');
+                if (taxCol) taxColVisible = taxCol.visible;
+            }
+        } catch(e) {}
+    }
+
+    if (!taxColVisible) {
+        taxRate = 0;
+    }
 
     // Detect tax type
     const taxType = detectTaxType();
@@ -1114,6 +1387,10 @@ function calculate() {
 
 function updateTaxRows(taxType, taxRate, subtotal) {
     const taxRowsEl = document.getElementById('tax-rows');
+    if (taxRate <= 0) {
+        taxRowsEl.innerHTML = '';
+        return;
+    }
     const totalTax = subtotal * (taxRate / 100);
 
     if (taxType === 'intra') {
@@ -1378,6 +1655,7 @@ function convertNumberToWords(amount) {
         if (gstinEl) {
             gstinEl.addEventListener('input', async function () {
                 const text = gstinEl.innerText.trim().toUpperCase();
+                if (typeof updatePlaceOfSupply === 'function') updatePlaceOfSupply();
                 if (GSTIN_REGEX.test(text)) {
                     const data = await lookupByGstin(text);
                     if (data) fillCompanyHeader(data);
@@ -1468,6 +1746,7 @@ function convertNumberToWords(amount) {
     }
 
     window.printAndSave = async function () {
+        savePageState();
         const saveBtn = document.querySelector('.no-print');
         const originalText = saveBtn.innerText;
 

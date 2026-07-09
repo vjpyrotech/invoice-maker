@@ -25,7 +25,6 @@
     table {
         width: 100%;
         border-collapse: collapse;
-        table-layout: fixed;
     }
 
     td {
@@ -223,6 +222,7 @@
 
 <button class="no-print" onclick="printAndSave()">Print Invoice</button>
 <button class="no-print" onclick="location.href='invoice.html'" style="background-color: #2196F3;">GST Invoice</button>
+<button class="no-print" onclick="location.href='mobile_normal.html'" style="background-color: #e91e63;">Mobile Editor</button>
 
 <div class="invoice-container">
     <div class="title">INVOICE</div>
@@ -244,7 +244,7 @@
             <!-- Header Row 1 -->
             <tr class="h-sm">
                 <td colspan="3" rowspan="4" class="b-all text-justify">
-                    <div contenteditable="true">
+                    <div contenteditable="true" id="seller-details">
                         <div class="bold size-14">VJ Traders</div>
                         <div class="font-arial">No 1 A, Red hills Road,</div>
                         <div class="font-arial">Chennai-600053</div>
@@ -322,8 +322,8 @@
             <tr>
                 <td class="b-left b-bottom b-right size-8 font-arial">SL</td>
                 <td class="b-bottom b-right size-10 font-arial text-center" style="padding-left: 32px; text-align: left;">Description of Goods</td>
-                <td colspan="2" class="b-bottom b-right text-center size-10">GST / IGST</td>
-                <td class="b-bottom b-right text-center size-10">%</td>
+                <td colspan="2" class="b-bottom b-right text-center size-10 tax-col-hsn">GST / IGST</td>
+                <td class="b-bottom b-right text-center size-10 tax-col-pct">%</td>
                 <td class="b-bottom b-right text-center font-arial size-10">Quantity</td>
                 <td class="b-bottom b-right text-center font-arial size-10">Rate</td>
                 <td class="b-bottom b-right text-center font-arial size-10">per</td>
@@ -339,8 +339,8 @@
                 <td class="b-right">
                     <div class="size-11" contenteditable="true">Carnival entertainment article(DÉCOR)</div>
                 </td>
-                <td colspan="2" class="b-right text-center size-10" contenteditable="true">95051000</td>
-                <td class="b-right text-center size-10 tax-per" contenteditable="true" oninput="calculate()">18</td>
+                <td colspan="2" class="b-right text-center size-10 tax-col-hsn" contenteditable="true">95051000</td>
+                <td class="b-right text-center size-10 tax-per tax-col-pct" contenteditable="true" oninput="calculate()">18</td>
                 <td class="b-right size-10">
                     <div class="text-right qty" style="padding-right: 5px;" contenteditable="true" oninput="calculate()">1</div>
                 </td>
@@ -357,13 +357,13 @@
             </tr>
 
             <!-- Tax Row -->
-            <tr style="height: 19.8pt;">
+            <tr style="height: 19.8pt;" id="tax-row">
                 <td class="b-left b-right no-b-top no-b-bottom">&nbsp;</td>
                 <td class="b-right no-b-top no-b-bottom text-right">
                     <span style="margin-right: 8px;">GST/IGST</span>
                 </td>
-                <td colspan="2" class="b-right no-b-top no-b-bottom">&nbsp;</td>
-                <td class="b-right no-b-top no-b-bottom">&nbsp;</td>
+                <td colspan="2" class="b-right no-b-top no-b-bottom tax-col-hsn">&nbsp;</td>
+                <td class="b-right no-b-top no-b-bottom tax-col-pct">&nbsp;</td>
                 <td class="b-right no-b-top no-b-bottom">&nbsp;</td>
                 <td class="b-right no-b-top no-b-bottom">&nbsp;</td>
                 <td class="b-right no-b-top no-b-bottom">&nbsp;</td>
@@ -371,11 +371,11 @@
             </tr>
 
             <!-- Spacer Row -->
-            <tr style="height: 23.95pt;">
+            <tr style="height: 23.95pt;" id="spacer-row">
                 <td class="b-left b-right b-bottom no-b-top">&nbsp;</td>
                 <td class="b-right b-bottom no-b-top">&nbsp;</td>
-                <td colspan="2" class="b-right b-bottom no-b-top">&nbsp;</td>
-                <td class="b-right b-bottom no-b-top">&nbsp;</td>
+                <td colspan="2" class="b-right b-bottom no-b-top tax-col-hsn">&nbsp;</td>
+                <td class="b-right b-bottom no-b-top tax-col-pct">&nbsp;</td>
                 <td class="b-right b-bottom no-b-top">&nbsp;</td>
                 <td class="b-right b-bottom no-b-top">&nbsp;</td>
                 <td class="b-right b-bottom no-b-top">&nbsp;</td>
@@ -383,11 +383,11 @@
             </tr>
 
             <!-- Total Row -->
-            <tr>
+            <tr id="total-row">
                 <td class="b-all no-b-top">&nbsp;</td>
                 <td class="b-bottom b-right no-b-top text-right font-arial size-10">Total</td>
-                <td colspan="2" class="b-bottom b-right no-b-top">&nbsp;</td>
-                <td class="b-bottom b-right no-b-top">&nbsp;</td>
+                <td colspan="2" class="b-bottom b-right no-b-top tax-col-hsn">&nbsp;</td>
+                <td class="b-bottom b-right no-b-top tax-col-pct">&nbsp;</td>
                 <td class="b-bottom b-right no-b-top">&nbsp;</td>
                 <td class="b-bottom b-right no-b-top">&nbsp;</td>
                 <td class="b-bottom b-right no-b-top">&nbsp;</td>
@@ -424,8 +424,7 @@
 
             <!-- Bottom Spacer -->
             <tr style="height: 24.5pt;">
-                <td colspan="3" class="b-left b-bottom b-right no-b-top">&nbsp;</td>
-                <td colspan="6" class="b-bottom b-right no-b-top">&nbsp;</td>
+                <td colspan="9" class="b-left b-bottom b-right no-b-top">&nbsp;</td>
             </tr>
         </tbody>
     </table>
@@ -433,11 +432,342 @@
 
 <script>
 window.onload = function() {
+    const hasMobileData = localStorage.getItem('mobile_normal_invoice_data');
+    if (hasMobileData) {
+        loadFromLocalStorage();
+    } else {
+        loadPageState();
+    }
     setDefaults();
     calculate();
     attachAutocomplete('consignee-details');
     attachAutocomplete('buyer-details');
 };
+
+function savePageState() {
+    const state = {
+        sellerDetails: document.getElementById('seller-details') ? document.getElementById('seller-details').innerHTML : '',
+        consigneeDetails: document.getElementById('consignee-details') ? document.getElementById('consignee-details').innerHTML : '',
+        buyerDetails: document.getElementById('buyer-details') ? document.getElementById('buyer-details').innerHTML : '',
+        invoiceNo: document.getElementById('invoice-no') ? document.getElementById('invoice-no').innerText : '',
+        invoiceDate: document.getElementById('invoice-date') ? document.getElementById('invoice-date').innerText : '',
+        taxAmt: document.getElementById('total-tax-amt') ? document.getElementById('total-tax-amt').innerText : '',
+        grandTotal: document.getElementById('grand-total') ? document.getElementById('grand-total').innerText : '',
+        amountWords: document.getElementById('amount-words') ? document.getElementById('amount-words').innerText : '',
+        items: []
+    };
+    document.querySelectorAll('.item-row').forEach(row => {
+        const item = {
+            desc: row.querySelector('td:nth-child(2)') ? row.querySelector('td:nth-child(2)').innerHTML : '',
+            hsn: row.querySelector('.tax-col-hsn') ? row.querySelector('.tax-col-hsn').innerText : '',
+            taxPer: row.querySelector('.tax-per') ? row.querySelector('.tax-per').innerText : '',
+            qty: row.querySelector('.qty') ? row.querySelector('.qty').innerText : '',
+            rate: row.querySelector('.rate') ? row.querySelector('.rate').innerText : '',
+            unit: row.querySelector('td:nth-child(8)') ? row.querySelector('td:nth-child(8)').innerText : '',
+            amount: row.querySelector('.amount') ? row.querySelector('.amount').innerText : ''
+        };
+        state.items.push(item);
+    });
+    localStorage.setItem('last_print_normal', JSON.stringify(state));
+}
+
+function loadPageState() {
+    const dataStr = localStorage.getItem('last_print_normal');
+    if (!dataStr) return;
+    try {
+        const state = JSON.parse(dataStr);
+        if (state.sellerDetails) document.getElementById('seller-details').innerHTML = state.sellerDetails;
+        if (state.consigneeDetails) document.getElementById('consignee-details').innerHTML = state.consigneeDetails;
+        if (state.buyerDetails) document.getElementById('buyer-details').innerHTML = state.buyerDetails;
+        if (state.invoiceNo) document.getElementById('invoice-no').innerText = state.invoiceNo;
+        if (state.invoiceDate) document.getElementById('invoice-date').innerText = state.invoiceDate;
+
+        if (state.items && state.items.length > 0) {
+            const tbody = document.querySelector('.invoice-container table tbody');
+            const addContainer = document.getElementById('add-row-container');
+            const existingRows = document.querySelectorAll('.item-row');
+            const templateRow = existingRows[0].cloneNode(true);
+            existingRows.forEach(r => r.remove());
+
+            state.items.forEach((item, idx) => {
+                const newRow = templateRow.cloneNode(true);
+                const slNo = newRow.querySelector('.sl-no');
+                if (slNo) slNo.innerText = idx + 1;
+                const descTd = newRow.querySelector('td:nth-child(2)');
+                if (descTd) descTd.innerHTML = item.desc || '';
+                const hsnTd = newRow.querySelector('.tax-col-hsn');
+                if (hsnTd) hsnTd.innerText = item.hsn || '';
+                const taxTd = newRow.querySelector('.tax-per');
+                if (taxTd) taxTd.innerText = item.taxPer || '18';
+                const qtyDiv = newRow.querySelector('.qty');
+                if (qtyDiv) qtyDiv.innerText = item.qty || '0';
+                const rateDiv = newRow.querySelector('.rate');
+                if (rateDiv) rateDiv.innerText = item.rate || '0';
+                const perTd = newRow.querySelector('td:nth-child(8)');
+                if (perTd) perTd.innerText = item.unit || 'BOX';
+                tbody.insertBefore(newRow, addContainer);
+            });
+            updateSL();
+        }
+    } catch(e) {
+        console.error('Failed to load page state:', e);
+    }
+}
+
+// Properly hide tax columns by removing cells and adjusting colspans
+// hideHsn: remove HSN columns (col-3 and col-4, which are a colspan=2 cell)
+// hidePct: remove the % column (col-5)
+function hideTaxColumns(hideHsn, hidePct) {
+    const colsToRemove = (hideHsn ? 2 : 0) + (hidePct ? 1 : 0); // HSN spans 2 cols, % spans 1
+    if (colsToRemove === 0) return;
+
+    const totalCols = 9;
+    const newTotalCols = totalCols - colsToRemove;
+
+    // Remove hidden <col> elements from colgroup
+    const colgroup = document.querySelector('.invoice-container table colgroup');
+    if (colgroup) {
+        if (hideHsn) {
+            const col3 = colgroup.querySelector('.col-3');
+            const col4 = colgroup.querySelector('.col-4');
+            if (col3) col3.remove();
+            if (col4) col4.remove();
+        }
+        if (hidePct) {
+            const col5 = colgroup.querySelector('.col-5');
+            if (col5) col5.remove();
+        }
+    }
+
+    // --- Adjust header rows ---
+    // Row 1: seller(colspan=3) + invoice no(colspan=4) + dated(colspan=2) = 9
+    // The seller spans cols 1,2,3. If hideHsn, col-3 is removed => seller becomes colspan=2
+    // If hidePct, col-5 is removed from invoice no area => invoice no becomes colspan=3
+    // Combined: seller=3-1=2(if hideHsn), invoiceNo=4-1=3(if hidePct, else if hideHsn 4-1=3... wait)
+    //
+    // Actually: seller spans cols 1-3. Only col-3 overlaps with HSN.
+    // Invoice No spans cols 4-7. Col-4 overlaps HSN, col-5 overlaps Pct.
+    // So: seller loses 1 if hideHsn. InvoiceNo loses 1 if hideHsn (col-4) + 1 if hidePct (col-5).
+
+    const table = document.querySelector('.invoice-container table');
+    const rows = table.querySelectorAll('tbody > tr');
+
+    rows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        if (cells.length === 0) return;
+
+        // Check if this is a full-width row (single cell with colspan=9)
+        if (cells.length === 1 && parseInt(cells[0].getAttribute('colspan')) === totalCols) {
+            cells[0].setAttribute('colspan', newTotalCols);
+            return;
+        }
+
+        // Remove cells with tax-col-hsn and tax-col-pct classes
+        if (hideHsn) {
+            row.querySelectorAll('.tax-col-hsn').forEach(cell => cell.remove());
+        }
+        if (hidePct) {
+            row.querySelectorAll('.tax-col-pct').forEach(cell => cell.remove());
+        }
+    });
+
+    // --- Adjust specific header section colspans ---
+    // Seller header (colspan=3, rowspan=4): loses 1 col if hideHsn (col-3 is within its span)
+    const sellerCell = rows[0] && rows[0].querySelector('td[rowspan="4"]');
+    if (sellerCell) {
+        const currentSpan = parseInt(sellerCell.getAttribute('colspan')) || 1;
+        const reduction = hideHsn ? 1 : 0; // col-3 is within seller's span
+        sellerCell.setAttribute('colspan', currentSpan - reduction);
+    }
+
+    // Invoice No cell (colspan=4): loses cols based on what's hidden
+    // col-4 removed if hideHsn, col-5 removed if hidePct
+    const invoiceNoCell = rows[0] && rows[0].querySelectorAll('td')[1]; // 2nd cell in first row
+    if (invoiceNoCell && parseInt(invoiceNoCell.getAttribute('colspan')) >= 3) {
+        const currentSpan = parseInt(invoiceNoCell.getAttribute('colspan')) || 1;
+        const reduction = (hideHsn ? 1 : 0) + (hidePct ? 1 : 0);
+        invoiceNoCell.setAttribute('colspan', currentSpan - reduction);
+    }
+
+    // Rows 2-4 (in seller rowspan): have colspan=4 and colspan=2 cells for the right side
+    // The colspan=4 spans cols 4-7, loses: 1 if hideHsn (col-4) + 1 if hidePct (col-5)
+    for (let i = 1; i <= 3; i++) {
+        if (!rows[i]) continue;
+        const firstCell = rows[i].querySelector('td');
+        if (firstCell && parseInt(firstCell.getAttribute('colspan')) >= 3) {
+            const currentSpan = parseInt(firstCell.getAttribute('colspan')) || 1;
+            const reduction = (hideHsn ? 1 : 0) + (hidePct ? 1 : 0);
+            firstCell.setAttribute('colspan', currentSpan - reduction);
+        }
+    }
+
+    // Consignee (colspan=3, rowspan=4): same as seller - loses 1 if hideHsn
+    const consigneeRow = rows[4]; // 5th row (0-indexed)
+    if (consigneeRow) {
+        const consigneeCell = consigneeRow.querySelector('td[rowspan="4"]');
+        if (consigneeCell) {
+            const currentSpan = parseInt(consigneeCell.getAttribute('colspan')) || 1;
+            const reduction = hideHsn ? 1 : 0;
+            consigneeCell.setAttribute('colspan', currentSpan - reduction);
+        }
+    }
+
+    // Consignee right-side cells (colspan=6): loses colsToRemove
+    for (let i = 4; i <= 7; i++) {
+        if (!rows[i]) continue;
+        const cells = rows[i].querySelectorAll('td');
+        const lastCell = cells[cells.length - 1];
+        if (lastCell && parseInt(lastCell.getAttribute('colspan')) >= 4) {
+            const currentSpan = parseInt(lastCell.getAttribute('colspan')) || 1;
+            lastCell.setAttribute('colspan', currentSpan - colsToRemove);
+        }
+    }
+
+    // Buyer section (row 8): colspan=3 + colspan=6
+    const buyerRow = rows[8];
+    if (buyerRow) {
+        const buyerCells = buyerRow.querySelectorAll('td');
+        if (buyerCells[0]) {
+            const cs = parseInt(buyerCells[0].getAttribute('colspan')) || 1;
+            if (cs >= 2) buyerCells[0].setAttribute('colspan', cs - (hideHsn ? 1 : 0));
+        }
+        if (buyerCells[1]) {
+            const cs = parseInt(buyerCells[1].getAttribute('colspan')) || 1;
+            if (cs >= 4) buyerCells[1].setAttribute('colspan', cs - colsToRemove);
+        }
+    }
+}
+
+function loadFromLocalStorage() {
+    const dataStr = localStorage.getItem('mobile_normal_invoice_data');
+    if (!dataStr) return;
+    try {
+        const data = JSON.parse(dataStr);
+        
+        // Seller details
+        const sellerEl = document.getElementById('seller-details');
+        if (sellerEl) {
+            let sellerHtml = `<div class="bold size-14">${data.companyName || ''}</div>`;
+            if (data.companyAddress) {
+                const addressLines = data.companyAddress.split(/<br\s*\/?>/i);
+                addressLines.forEach(line => {
+                    sellerHtml += `<div class="font-arial">${line}</div>`;
+                });
+            }
+            if (data.companyPhone) {
+                sellerHtml += `<div class="font-arial">MOB ${data.companyPhone}</div>`;
+            }
+            if (data.sellerGstin) {
+                sellerHtml += `<div>GSTIN ${data.sellerGstin}</div>`;
+            }
+            sellerEl.innerHTML = sellerHtml;
+        }
+
+        // Consignee Details (Ship to)
+        const consigneeEl = document.getElementById('consignee-details');
+        if (consigneeEl) {
+            let consigneeHtml = `<div class="bold">${data.partyName || ''}</div>`;
+            if (data.partyAddress) {
+                const addressLines = data.partyAddress.split(/<br\s*\/?>/i);
+                addressLines.forEach(line => {
+                    consigneeHtml += `<div>${line}</div>`;
+                });
+            }
+            if (data.partyMobile) {
+                consigneeHtml += `<div class="font-arial size-10">MOB : ${data.partyMobile}</div>`;
+            }
+            consigneeEl.innerHTML = consigneeHtml;
+        }
+
+        // Buyer Details (Bill to)
+        const buyerEl = document.getElementById('buyer-details');
+        if (buyerEl) {
+            let buyerHtml = `<div class="bold">${data.partyName || ''}</div>`;
+            if (data.partyAddress) {
+                const addressLines = data.partyAddress.split(/<br\s*\/?>/i);
+                addressLines.forEach(line => {
+                    buyerHtml += `<div>${line}</div>`;
+                });
+            }
+            if (data.partyMobile) {
+                buyerHtml += `<div class="font-arial size-10">MOB : ${data.partyMobile}</div>`;
+            }
+            buyerEl.innerHTML = buyerHtml;
+        }
+
+        // Invoice info
+        if (data.invoiceNo) document.getElementById('invoice-no').innerText = data.invoiceNo;
+        if (data.invoiceDate) document.getElementById('invoice-date').innerText = data.invoiceDate;
+
+        // Items list
+        if (data.items && data.items.length > 0) {
+            const tbody = document.querySelector('.invoice-container table tbody');
+            const addContainer = document.getElementById('add-row-container');
+
+            // Identify custom columns from the saved column config
+            const standardIds = ['desc','hsn','carton','qty','unit','price','tax'];
+            const savedCols = (data.columns && Array.isArray(data.columns)) ? data.columns : [];
+            const customCols = savedCols.filter(c => c.visible && !standardIds.includes(c.id));
+
+            // Determine if tax percentage column should be visible
+            const taxCol = savedCols.find(c => c.id === 'tax');
+            const taxColVisible = taxCol ? taxCol.visible : true; // default true
+
+            // Determine if HSN column should be visible
+            const hsnCol = savedCols.find(c => c.id === 'hsn');
+            const hsnColVisible = hsnCol ? hsnCol.visible : true;
+
+            if (!taxColVisible || !hsnColVisible) {
+                hideTaxColumns(!hsnColVisible, !taxColVisible);
+            }
+
+            // Remove existing item rows
+            const existingRows = document.querySelectorAll('.item-row');
+            const templateRow = existingRows[0].cloneNode(true);
+            existingRows.forEach(r => r.remove());
+
+            data.items.forEach((item, idx) => {
+                const newRow = templateRow.cloneNode(true);
+
+                const slNoSpan = newRow.querySelector('.sl-no');
+                if (slNoSpan) slNoSpan.innerText = idx + 1;
+
+                // Description cell: main desc + custom column values (NO carton note here)
+                const descTd = newRow.querySelector('td:nth-child(2)');
+                if (descTd) {
+                    let descHtml = `<div class="size-11">${item.desc || ''}</div>`;
+                    customCols.forEach(col => {
+                        const val = item[col.id];
+                        if (val !== undefined && val !== '') {
+                            descHtml += `<div class="font-arial size-8" style="color:#555;margin-top:1px;">${col.label}: ${val}</div>`;
+                        }
+                    });
+                    descTd.innerHTML = descHtml;
+                }
+
+                const hsnTd = newRow.querySelector('.tax-col-hsn');
+                if (hsnTd) hsnTd.innerText = item.hsn || '';
+
+                const taxTd = newRow.querySelector('.tax-per');
+                if (taxTd) taxTd.innerText = item.tax !== undefined ? item.tax : (data.taxRate !== undefined ? data.taxRate : '18');
+
+                const qtyDiv = newRow.querySelector('.qty');
+                if (qtyDiv) qtyDiv.innerText = item.qty || '0';
+
+                const rateDiv = newRow.querySelector('.rate');
+                if (rateDiv) rateDiv.innerText = item.price || '0.00';
+
+                const perTd = newRow.querySelector('td:nth-child(8)');
+                if (perTd) perTd.innerText = item.unit || 'BOX';
+
+                tbody.insertBefore(newRow, addContainer);
+            });
+            updateSL();
+        }
+    } catch(e) {
+        console.error("Failed to load invoice from localStorage in index.html:", e);
+    }
+}
 
 function setDefaults() {
     const dateEl = document.getElementById('invoice-date');
@@ -508,14 +838,39 @@ function calculate() {
     let totalTax = 0;
     let totalAmount = 0;
 
+    // Check if tax column is visible or disabled from columns config in localStorage
+    let taxColVisible = true;
+    let globalTaxRate = 18;
+    const dataStr = localStorage.getItem('mobile_normal_invoice_data');
+    if (dataStr) {
+        try {
+            const data = JSON.parse(dataStr);
+            if (data.columns && Array.isArray(data.columns)) {
+                const taxCol = data.columns.find(c => c.id === 'tax');
+                if (taxCol) taxColVisible = taxCol.visible;
+            }
+            if (data.taxRate !== undefined) {
+                globalTaxRate = parseFloat(data.taxRate) || 0;
+            }
+        } catch(e) {}
+    }
+
     rows.forEach(row => {
         const qtyText = row.querySelector('.qty').innerText;
         const rateText = row.querySelector('.rate').innerText;
-        const taxPerText = row.querySelector('.tax-per').innerText;
+        
+        let taxPer = 0;
+        if (taxColVisible) {
+            const taxPerEl = row.querySelector('.tax-per');
+            if (taxPerEl && taxPerEl.innerText.trim() !== '') {
+                taxPer = parseFloat(taxPerEl.innerText.replace(/[^\d.]/g, '')) || 0;
+            } else {
+                taxPer = globalTaxRate;
+            }
+        }
 
         const qty = parseFloat(qtyText.replace(/[^\d.]/g, '')) || 0;
         const rate = parseFloat(rateText.replace(/[^\d.]/g, '')) || 0;
-        const taxPer = parseFloat(taxPerText.replace(/[^\d.]/g, '')) || 0;
 
         const amount = qty * rate;
         
@@ -528,6 +883,16 @@ function calculate() {
     });
 
     const grandTotal = totalAmount + totalTax;
+
+    // Update tax row visibility in table
+    const taxRow = document.getElementById('total-tax-amt') ? document.getElementById('total-tax-amt').closest('tr') : null;
+    if (taxRow) {
+        if (totalTax <= 0 || !taxColVisible) {
+            taxRow.style.display = 'none';
+        } else {
+            taxRow.style.display = '';
+        }
+    }
 
     document.getElementById('total-tax-amt').innerText = totalTax.toFixed(2);
     document.getElementById('grand-total').innerText = grandTotal.toFixed(2);
@@ -637,6 +1002,7 @@ function convertNumberToWords(amount) {
   const db = getFirestore(app);
 
   window.printAndSave = async function() {
+    savePageState();
     const saveBtn = document.querySelector('.no-print');
     const originalText = saveBtn.innerText;
     
